@@ -3,9 +3,11 @@
 .WARMST equ $FF7C
 
 ; начальная задержка фаз
-DELAY_START equ  $0030
+DELAY_START equ  $0100 ;?
 ; приращение периода
-DT equ  $0008
+DT equ  $0050 ;?
+GLOB_DT_UP equ $0180 ;?
+GLOB_DT_DOWN equ $0080 ;?
 
 ; регистр режима компараторов
 TCTL1 equ $1020
@@ -24,15 +26,27 @@ TFLG1 equ $1023
  ldaa #MODE
  staa TCTL1
  
+ ;установка периода по-умолчанию
+ ldd CurDelay
+ std TOC2
+ 
 loop:
+ ; проверка выхода за границу
+ ldd TOC2
+ subd #GLOB_DT_UP
+ bge if_change_sign
+ 
+ ldd TOC2
+ subd #GLOB_DT_DOWN
+ bls if_change_sign
+ 
+add_cur_delay:
  ; добавим приращение
  ldd CurDelay
- addd #DT
+ addd CurDT
  std CurDelay
  
  ; установить новое значение "будильника"(через прибавление)
- ldd TOC2
- addd CurDelay
  std TOC2
  
  ; опрос случилось ли событие в цикле
@@ -48,8 +62,19 @@ asking:
  ;зацикливаем
  jmp loop
 
+; для ветвлений
+if_change_sign:
+ ; меняем знак CurDT
+ ldd CurDT
+ COMA
+ COMB
+ INCB ; Не совсем верно
+ std CurDT
+ jmp add_cur_delay
+
 ;--------------------------------------------------
 ;Выделение памяти
 ;--------------------------------------------------
 ; переменная задержки
-CurDelay: FDB DELAY_START
+CurDelay:     FDB DELAY_START
+CurDT:        FDB DT
