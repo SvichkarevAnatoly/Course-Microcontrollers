@@ -1,4 +1,5 @@
 ; реализовать генератор качающейся частоты
+; все приращения теперь относительно частоты
 
 .WARMST equ $FF7C
 
@@ -55,9 +56,17 @@ add_cur_delay:
  addd CurDT
  std CurDelay
  
+ ; здесь переводим из частоты в период
+ ; 
+ ; 1/CurDelay = CurTDelay приращение периода
+ ldd #1000 ; чтобы получили осмысленное деление
+ ldx #CurDelay
+ idiv
+ stx CurTDelay
+ 
  ; установить новое значение "будильника"(через прибавление)
  ldd TOC2
- addd CurDelay
+ addd CurTDelay
  std TOC2
  
  ; опрос случилось ли событие в цикле
@@ -97,4 +106,5 @@ if_reached_down:
 ;--------------------------------------------------
 ; переменная задержки
 CurDelay:     FDB DELAY_START
+CurTDelay:     FDB DELAY_START
 CurDT:        FDB DT
